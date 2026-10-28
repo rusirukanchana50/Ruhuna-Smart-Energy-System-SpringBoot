@@ -16,7 +16,8 @@ import java.util.Map;
 /**
  * HealthController
  * ----------------
- * Provides system diagnostics and health status for Phase 2 verification.
+ * Provides system diagnostics and health status for local and cloud deployments (e.g. Render).
+ * Ensures database credentials are never exposed in diagnostics or error messages.
  */
 @RestController
 @RequestMapping("/api")
@@ -40,7 +41,7 @@ public class HealthController {
         response.put("port", serverPort);
         response.put("javaVersion", System.getProperty("java.version"));
         response.put("isolatedDatabase", "ruhuna_energy_spring");
-        response.put("mongoUri", mongoUri);
+        response.put("mongoUri", maskMongoUri(mongoUri));
 
         Map<String, Object> databaseStatus = new LinkedHashMap<>();
         if (mongoTemplate != null) {
@@ -51,7 +52,7 @@ public class HealthController {
                 databaseStatus.put("databaseName", mongoTemplate.getDb().getName());
             } catch (Exception e) {
                 databaseStatus.put("connected", false);
-                databaseStatus.put("error", e.getMessage());
+                databaseStatus.put("error", sanitizeErrorMessage(e.getMessage()));
             }
         } else {
             databaseStatus.put("connected", false);
@@ -60,5 +61,15 @@ public class HealthController {
         response.put("database", databaseStatus);
         response.put("timestamp", Instant.now().toString());
         return ResponseEntity.ok(response);
+    }
+
+    private String maskMongoUri(String uri) {
+        if (uri == null) return "null";
+        return uri.replaceAll("://[^@]+@", "://****:****@");
+    }
+
+    private String sanitizeErrorMessage(String msg) {
+        if (msg == null) return "Database connection check failed";
+        return msg.replaceAll("://[^@]+@", "://****:****@");
     }
 }

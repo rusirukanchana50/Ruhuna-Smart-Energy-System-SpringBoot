@@ -1,0 +1,17 @@
+.git
+.github
+*.md
+.gitignore
+.dockerignore
+backend/target/
+**/target/
+*.class
+*.log
+logs/
+.idea/
+.vscode/
+node_modules/
+**/node_modules/
+dump/
+backups/
+*.db
