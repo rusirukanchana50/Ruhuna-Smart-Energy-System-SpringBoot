@@ -3,11 +3,49 @@
 
 An enterprise-grade campus energy monitoring, power quality analysis, electrical anomaly detection, and energy audit reporting platform designed for the **Faculty of Engineering, University of Ruhuna**, Hapugala, Galle, Sri Lanka.
 
-Built with **Java 25**, **Spring Boot 3.3.5**, **MongoDB 7.0**, and clean, high-performance vanilla web technologies.
+Built with **Java 25**, **Spring Boot 3.3.5**, **MongoDB 7.0**, and clean, high-performance vanilla web technologies organized into clean `frontend/` and `backend/` source directories.
 
 ---
 
-## 1. System Architecture & Technology Stack
+## 1. Project Directory Structure
+
+```
+Ruhuna-Smart-Energy-System-SpringBoot/
+├── .gitignore                      # Git exclusion rules (build outputs, logs, secrets)
+├── README.md                       # Comprehensive system documentation
+├── frontend/                       # Single source of truth for all web UI assets
+│   ├── css/
+│   │   └── style.css               # Shared dark theme and layout rules
+│   ├── js/
+│   │   ├── alerts.js               # Electrical anomaly table & acknowledgment logic
+│   │   ├── analytics.js            # Historical charting & aggregate metric controls
+│   │   ├── auth.js                 # Session login, CSRF storage & logout
+│   │   ├── cost_efficiency.js      # Tariff breakdowns & departmental rankings
+│   │   ├── dashboard.js            # Live telemetry polling & building CRUD modals
+│   │   ├── printable_report.js     # Print/PDF formatting & auto-print trigger
+│   │   └── reports.js              # 16-metric audit summary & CSV export trigger
+│   ├── alerts.html                 # Electrical Alerts view
+│   ├── analytics.html              # Historical Energy Analytics view
+│   ├── cost_efficiency.html        # Energy Cost & Efficiency view
+│   ├── dashboard.html              # Live Telemetry Monitoring dashboard
+│   ├── login.html                  # Authentication portal
+│   ├── printable_report.html       # Printable Energy Audit view
+│   └── reports.html                # Energy Audit & Export view
+└── backend/                        # Java Spring Boot enterprise service
+    ├── .mvn/wrapper/               # Maven wrapper binaries & properties
+    ├── mvnw / mvnw.cmd             # Cross-platform Maven wrapper execution scripts
+    ├── pom.xml                     # Maven build config with automated frontend sync
+    └── src/
+        ├── main/
+        │   ├── java/...            # Controllers, Services, Models, Repositories, Schedulers
+        │   └── resources/
+        │       └── application.properties # Server port, MongoDB URI, scheduler timing
+        └── test/...                # 29 integration test suites (35+ test cases)
+```
+
+---
+
+## 2. System Architecture & Technology Stack
 
 * **Backend Framework**: Java 25 & Spring Boot 3.3.5
   * **Spring Security 6**: Session-based authentication with `JSESSIONID`, Role-Based Access Control (`Administrator` / `Viewer`), and double-submit `X-CSRF-TOKEN` protection.
@@ -18,13 +56,16 @@ Built with **Java 25**, **Spring Boot 3.3.5**, **MongoDB 7.0**, and clean, high-
 * **Frontend Architecture**: Pure Semantic HTML5, Modular CSS3 Dark Theme, and Vanilla JavaScript (ES6+)
   * Zero heavyweight framework dependencies (no React/Angular/Vue bloat).
   * Fast page rendering, zero static-asset bypass vulnerabilities, and responsive desktop/tablet layouts.
+* **Build-Time Resource Synchronization**:
+  * The `frontend/` directory is the single source of truth.
+  * Maven's `maven-resources-plugin` automatically prepares and copies all frontend assets into `target/classes/static/` during the `generate-resources` phase of both `mvnw spring-boot:run` and `mvnw test`.
 * **Telemetry Simulator**: Three-Phase Electrical Simulator
   * Physics-grounded three-phase AC power calculations: active power ($P$), apparent power ($S$), reactive power ($Q$), line voltage ($V_L$), phase current ($I_L$), and power factor ($\cos\phi$).
   * Asia/Colombo (`UTC+05:30`) time-of-day operational curves (academic hours vs. night standby).
 
 ---
 
-## 2. Core Application Modules
+## 3. Core Application Modules
 
 The system provides five dedicated functional sections accessible via authenticated navigation:
 
@@ -69,7 +110,7 @@ The system provides five dedicated functional sections accessible via authentica
 
 ---
 
-## 3. Security, Authentication & RBAC
+## 4. Security, Authentication & RBAC
 
 * **Role-Based Access Control**:
   * **Administrator**: Full privileges to mutate facility records, acknowledge electrical alerts, modify tariff parameters, and generate reports.
@@ -81,15 +122,15 @@ The system provides five dedicated functional sections accessible via authentica
 
 ---
 
-## 4. Prerequisites
+## 5. Prerequisites
 
 * **Java Development Kit (JDK)**: Java 25 (or Java 21 LTS) installed and configured on your system `PATH`.
 * **MongoDB**: MongoDB 7.0 Community Edition listening locally or over network.
-* **Build Tool**: Apache Maven 3.9+ (or use the bundled `mvnw` / `mvnw.cmd` wrapper).
+* **Build Tool**: Apache Maven 3.9+ (or use the bundled `mvnw` / `mvnw.cmd` wrapper in `backend/`).
 
 ---
 
-## 5. Local Setup & Startup Guide
+## 6. Local Setup & Startup Guide
 
 ### Step 1: Start MongoDB 7.0
 Start a MongoDB 7 instance on port `27018` (or default port `27017`):
@@ -122,15 +163,15 @@ export SIMULATOR_ENABLED="true"
 ```
 
 ### Step 3: Run the Spring Boot Application
-Navigate to the `spring_backend` directory and run using the Maven wrapper:
+Navigate to the `backend` directory and run using the Maven wrapper:
 ```powershell
-cd spring_backend
+cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
 *(On Linux / macOS)*:
 ```bash
-cd spring_backend
+cd backend
 ./mvnw spring-boot:run
 ```
 
@@ -138,9 +179,9 @@ The application will start on **`http://localhost:5001`**.
 
 ---
 
-## 6. Application Configuration Reference
+## 7. Application Configuration Reference
 
-Configuration properties are located in [`spring_backend/src/main/resources/application.properties`](file:///spring_backend/src/main/resources/application.properties):
+Configuration properties are located in [`backend/src/main/resources/application.properties`](file:///backend/src/main/resources/application.properties):
 
 | Property | Default Value | Description |
 | :--- | :--- | :--- |
@@ -153,19 +194,19 @@ Configuration properties are located in [`spring_backend/src/main/resources/appl
 
 ---
 
-## 7. Automated Test Suite
+## 8. Automated Test Suite
 
 The project includes an extensive suite of **35+ automated Spring Boot integration tests** covering controllers, services, repositories, security rules, and page rendering.
 
 To execute all tests using an isolated test database:
 ```powershell
-cd spring_backend
+cd backend
 .\mvnw.cmd test
 ```
 
 ---
 
-## 8. Disclaimers
+## 9. Disclaimers
 
 ### Academic Prototype Disclaimer
 This system has been developed as an academic engineering project (**EE4207: Smart Energy Systems**) for the Faculty of Engineering, University of Ruhuna, Sri Lanka. It serves as an advanced functional prototype demonstrating modern IoT energy architecture, three-phase telemetry analysis, and enterprise software engineering principles.
@@ -175,7 +216,7 @@ All electricity billing estimates, demand charges, fixed charges, and cost calcu
 
 ---
 
-## 9. License
+## 10. License
 
 This project is licensed under the MIT License — see the repository for details.
 

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @SpringBootTest
 @TestPropertySource(properties = {
-        "spring.data.mongodb.uri=mongodb://127.0.0.1:27018/ruhuna_energy_spring",
+        "spring.data.mongodb.uri=mongodb://127.0.0.1:27018/ruhuna_energy_spring_test",
         "app.init-core-buildings=false"
 })
 @DisplayName("Dev Database (ruhuna_energy_spring) - Opt-In Initialization Verification")
