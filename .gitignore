@@ -1,0 +1,76 @@
+# ==============================================================================
+# University of Ruhuna - Faculty of Engineering
+# Smart Energy Monitoring and Analytics System (Java Spring Boot + MongoDB)
+# Git Ignore Configuration (.gitignore)
+# ==============================================================================
+
+# Compiled Java & Maven Build Artifacts
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Explicitly track the Maven Wrapper executable JAR
+!.mvn/wrapper/maven-wrapper.jar
+!spring_backend/.mvn/wrapper/maven-wrapper.jar
+
+# Node.js and Package Manager Artifacts (Legacy & Frontend Tooling)
+node_modules/
+**/node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment Variables, Keys, Credentials & Secrets
+.env
+.env.*
+!.env.example
+*.secret
+.secret_key
+*.key
+*.pem
+*session_secret*
+*password*
+*.pass
+
+# Database Exports, Local Dumps & Backups
+dump/
+**/dump/
+*.bson
+*.bson.gz
+mongodump/
+**/mongodump/
+*.json.bak
+*.export.json
+*.bak
+**/*.bak
+backups/
+**/backups/
+*.db
+*.sqlite
+*.sqlite3
+
+# Runtime Application Logs
+logs/
+**/logs/
+*.log
+
+# IDE, Editor & OS Metadata
+.idea/
+**/.idea/
+*.iml
+.vscode/
+**/.vscode/
+.classpath
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
