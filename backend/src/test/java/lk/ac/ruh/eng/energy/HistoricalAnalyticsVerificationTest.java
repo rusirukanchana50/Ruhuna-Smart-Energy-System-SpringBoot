@@ -356,7 +356,7 @@ class HistoricalAnalyticsVerificationTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.mode").value("comparison"))
                 .andExpect(jsonPath("$.campus_summary.building_count").value(6))
-                .andExpect(jsonPath("$.campus_summary.peak_active_power_kw").value(45.0))
+                .andExpect(jsonPath("$.campus_summary.peak_active_power_kw").value(75.0))
                 .andExpect(jsonPath("$.comparison").isArray())
                 .andReturn();
 

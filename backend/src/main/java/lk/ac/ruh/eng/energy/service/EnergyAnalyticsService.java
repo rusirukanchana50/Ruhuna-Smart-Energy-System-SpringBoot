@@ -2,6 +2,7 @@ package lk.ac.ruh.eng.energy.service;
 
 import lk.ac.ruh.eng.energy.model.Building;
 import lk.ac.ruh.eng.energy.model.EnergyReading;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,6 +25,17 @@ public class EnergyAnalyticsService {
 
     public static final double NOMINAL_INTERVAL_SECONDS = 15.0;
     public static final double MAX_CONTINUOUS_GAP_SECONDS = 60.0;
+
+    private final EnergyEfficiencyService energyEfficiencyService;
+
+    public EnergyAnalyticsService() {
+        this(new EnergyEfficiencyService());
+    }
+
+    @Autowired
+    public EnergyAnalyticsService(EnergyEfficiencyService energyEfficiencyService) {
+        this.energyEfficiencyService = energyEfficiencyService != null ? energyEfficiencyService : new EnergyEfficiencyService();
+    }
 
     // =========================================================================
     // DTOs & RECORDS FOR TYPE-SAFE AND REST-COMPATIBLE RESULTS
@@ -303,14 +315,12 @@ public class EnergyAnalyticsService {
 
     /**
      * Aggregates multiple building analytics results into campus-wide comparison metrics.
-     * Preserves original Node.js definitions:
+     * Computes electrical parameters across the monitored window:
      * - Campus Total Energy: Sum of building total energies (3 decimals).
      * - Campus Average Demand: Sum of average demands of buildings with readings > 0 (2 decimals).
-     * - Campus Peak Demand: Maximum peak demand among individual buildings (2 decimals).
-     *   NOTE: In this system's original definition, campus peak is Math.max(b1.peak, b2.peak, ...)
-     *   rather than simultaneous coincident peak or sum of peaks.
+     * - Campus Peak Demand: Coincident peak demand across simultaneous readings at matching timestamps/cycles (2 decimals).
      * - Campus Average PF: Arithmetic mean of building average power factors (3 decimals).
-     * - Campus Load Factor: campusAvgPower / sumOfBuildingPeakDemands (3 decimals, pct 1 decimal).
+     * - Campus Load Factor: campusAvgPower / coincidentCampusPeakDemand (3 decimals, pct 1 decimal).
      *
      * @param buildingReadingsMap Map of Building entities to their corresponding reading collections.
      * @return CampusComparisonResult with campus_summary and comparison items.
@@ -375,18 +385,22 @@ public class EnergyAnalyticsService {
             campusAvgPf = sumPf / campusPfs.size();
         }
 
-        // Original definition: Math.max across building peak demands
-        double campusPeakPower = 0.0;
-        double sumPeakPowers = 0.0;
-        for (CampusComparisonItem item : comparisonList) {
-            if (item.peakActivePowerKw() > campusPeakPower) {
-                campusPeakPower = item.peakActivePowerKw();
+        // Coincident campus peak demand:
+        // Evaluates coincident peak across simultaneous readings matching the same synchronized cycle/timestamp
+        List<EnergyReading> allReadings = new ArrayList<>();
+        for (List<EnergyReading> bReadings : buildingReadingsMap.values()) {
+            if (bReadings != null) {
+                allReadings.addAll(bReadings);
             }
-            sumPeakPowers += item.peakActivePowerKw();
         }
 
-        // Campus load factor = campusAvgPower / sumPeakPowers
-        double campusLoadFactor = sumPeakPowers > 0.0 ? campusAvgPower / sumPeakPowers : 0.0;
+        EnergyEfficiencyService.CampusSynchronizedMetrics syncMetrics =
+                energyEfficiencyService.calculateCampusSynchronizedMetrics(allReadings);
+
+        double campusPeakPower = syncMetrics.peakActivePowerKw();
+
+        // Campus load factor = campusAvgPower / coincidentCampusPeakDemand
+        double campusLoadFactor = campusPeakPower > 0.0 ? campusAvgPower / campusPeakPower : 0.0;
         campusLoadFactor = Math.max(0.0, Math.min(1.0, campusLoadFactor));
 
         CampusSummary summary = new CampusSummary(

@@ -412,7 +412,7 @@ class EnergyAnalyticsControllerTest {
                 .andExpect(jsonPath("$.data_source").value("SIMULATED"))
                 .andExpect(jsonPath("$.mode").value("comparison"))
                 .andExpect(jsonPath("$.campus_summary.building_count").value(2))
-                .andExpect(jsonPath("$.campus_summary.peak_active_power_kw").value(40.0))
+                .andExpect(jsonPath("$.campus_summary.peak_active_power_kw").value(70.0))
                 .andExpect(jsonPath("$.comparison").isArray())
                 .andExpect(jsonPath("$.comparison[0].building_code").value("CEE"))
                 .andExpect(jsonPath("$.comparison[1].building_code").value("EIE"));

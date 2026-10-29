@@ -331,16 +331,16 @@ class EnergyAnalyticsServiceTest {
         // Campus Avg Active Power = 25.0 + 50.0 = 75.0 kW (sum of average demands)
         assertThat(result.campusSummary().avgActivePowerKw()).isEqualTo(75.00);
 
-        // Campus Peak Demand = Math.max(30.0, 60.0) = 60.0 kW (Original Node.js definition)
-        // NOTE: In this system's original definition, campus peak is Math.max of individual building peaks.
-        assertThat(result.campusSummary().peakActivePowerKw()).isEqualTo(60.00);
+        // Campus Peak Demand = Coincident synchronized total peak (30.0 + 60.0 = 90.0 kW at t1)
+        assertThat(result.campusSummary().peakActivePowerKw()).isEqualTo(90.00);
+
+        // Campus Peak Demand >= Campus Average Demand
+        assertThat(result.campusSummary().peakActivePowerKw()).isGreaterThanOrEqualTo(result.campusSummary().avgActivePowerKw());
 
         // Campus Average PF = (0.910 + 0.950) / 2 = 0.930
         assertThat(result.campusSummary().avgPowerFactor()).isEqualTo(0.930);
 
-        // Campus Load Factor = campusAvgPower / sumOfBuildingPeaks
-        // sumPeakPowers = 30.0 + 60.0 = 90.0 kW
-        // campusLoadFactor = 75.0 / 90.0 = 0.8333... -> 0.833 (83.3%)
+        // Campus Load Factor = campusAvgPower / coincidentCampusPeak = 75.0 / 90.0 = 0.8333... -> 0.833 (83.3%)
         assertThat(result.campusSummary().loadFactor()).isEqualTo(0.833);
         assertThat(result.campusSummary().loadFactorPct()).isEqualTo(83.3);
         assertThat(result.campusSummary().buildingCount()).isEqualTo(2);
@@ -372,7 +372,76 @@ class EnergyAnalyticsServiceTest {
 
         // Campus Avg Power only includes active buildings
         assertThat(result.campusSummary().avgActivePowerKw()).isEqualTo(25.00);
+        assertThat(result.campusSummary().peakActivePowerKw()).isEqualTo(30.00);
+        assertThat(result.campusSummary().loadFactor()).isEqualTo(0.833);
         assertThat(result.campusSummary().buildingCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("8.2 Campus peak demand is coincident synchronized total across diverse building peaks")
+    void testCampusPeakDemandCoincidentDiversity() {
+        Building b1 = new Building("Civil Complex", "CEE", "Civil", 60.0, true);
+        b1.setId("bldg-cee");
+
+        Building b2 = new Building("Electrical Complex", "EIE", "Electrical", 80.0, true);
+        b2.setId("bldg-eie");
+
+        Instant t1 = baseTime;
+        Instant t2 = baseTime.plusSeconds(15);
+
+        // Building 1 peaks at t1 (50 kW) and drops to 20 kW at t2 -> single peak = 50 kW
+        List<EnergyReading> r1 = List.of(
+                createReading(t1, 50.0, 0.92, 400.0, 75.0),
+                createReading(t2, 20.0, 0.90, 400.0, 30.0)
+        );
+
+        // Building 2 is low at t1 (10 kW) and peaks at t2 (60 kW) -> single peak = 60 kW
+        List<EnergyReading> r2 = List.of(
+                createReading(t1, 10.0, 0.88, 400.0, 15.0),
+                createReading(t2, 60.0, 0.95, 400.0, 90.0)
+        );
+
+        Map<Building, List<EnergyReading>> map = new LinkedHashMap<>();
+        map.put(b1, r1);
+        map.put(b2, r2);
+
+        CampusComparisonResult result = service.calculateCampusComparison(map);
+
+        // Individual building peaks remain unchanged
+        assertThat(result.comparison().get(0).peakActivePowerKw()).isEqualTo(50.00);
+        assertThat(result.comparison().get(1).peakActivePowerKw()).isEqualTo(60.00);
+
+        // Synchronized coincident totals:
+        // At t1: 50.0 + 10.0 = 60.0 kW
+        // At t2: 20.0 + 60.0 = 80.0 kW
+        // Coincident Peak = 80.00 kW (NOT largest single peak of 60.0 kW, NOT sum of peaks of 110.0 kW)
+        assertThat(result.campusSummary().peakActivePowerKw()).isEqualTo(80.00);
+
+        // Campus average demand = (60.0 + 80.0) / 2 = 70.00 kW
+        assertThat(result.campusSummary().avgActivePowerKw()).isEqualTo(70.00);
+
+        // Campus Peak Demand >= Campus Average Demand
+        assertThat(result.campusSummary().peakActivePowerKw()).isGreaterThanOrEqualTo(result.campusSummary().avgActivePowerKw());
+
+        // Campus Load Factor = 70.0 / 80.0 = 0.875 (87.5%)
+        assertThat(result.campusSummary().loadFactor()).isEqualTo(0.875);
+        assertThat(result.campusSummary().loadFactorPct()).isEqualTo(87.5);
+    }
+
+    @Test
+    @DisplayName("8.3 Safe handling of empty and null reading maps")
+    void testSafeHandlingOfEmptyAndNullMaps() {
+        CampusComparisonResult nullResult = service.calculateCampusComparison(null);
+        assertThat(nullResult.campusSummary().peakActivePowerKw()).isEqualTo(0.0);
+        assertThat(nullResult.campusSummary().avgActivePowerKw()).isEqualTo(0.0);
+        assertThat(nullResult.campusSummary().loadFactor()).isEqualTo(0.0);
+        assertThat(nullResult.comparison()).isEmpty();
+
+        CampusComparisonResult emptyResult = service.calculateCampusComparison(Collections.emptyMap());
+        assertThat(emptyResult.campusSummary().peakActivePowerKw()).isEqualTo(0.0);
+        assertThat(emptyResult.campusSummary().avgActivePowerKw()).isEqualTo(0.0);
+        assertThat(emptyResult.campusSummary().loadFactor()).isEqualTo(0.0);
+        assertThat(emptyResult.comparison()).isEmpty();
     }
 
     // =========================================================================
